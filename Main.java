@@ -28,6 +28,11 @@ class Cuenta {
         return titular;
     }
 
+    public ArrayList<String> getHistorial() {
+        return historial;
+    }
+    
+
     public void depositar(double monto) {
         if (monto > 0) {
             this.saldo += monto;
@@ -36,16 +41,24 @@ class Cuenta {
     }
 
     public boolean retirar(double monto) {
-        if (monto > 0 && monto <= saldo) {
-            this.saldo -= monto;
-            historial.add(String.format("Retiro: -$%.2f", monto));
-            return true;
+        if (saldo == 0) {
+            historial.add("Intento de retiro fallido: saldo insuficiente (saldo actual: $0.00)");
+            return false;
         }
-        return false;
-    }
-
-    public ArrayList<String> getHistorial() {
-        return historial;
+    
+        if (monto <= 0) {
+            historial.add(String.format("Intento de retiro fallido: monto inválido ($%.2f)", monto));
+            return false;
+        }
+    
+        if (monto > saldo) {
+            historial.add(String.format("Intento de retiro fallido: monto excede saldo (saldo: $%.2f, solicitado: $%.2f)", saldo, monto));
+            return false;
+        }
+    
+        this.saldo -= monto;
+        historial.add(String.format("Retiro: -$%.2f", monto));
+        return true;
     }
 }
 
@@ -160,7 +173,8 @@ public class Main {
             System.out.println("5. Consultar saldo");
             System.out.println("6. Ver historial");
             System.out.println("7. Transferir dinero");
-            System.out.println("8. Salir");
+            System.out.println("8. Mostrar datos del cliente");
+            System.out.println("9. Salir");
             System.out.print("Seleccione una opción: ");
 
             try {
@@ -190,6 +204,9 @@ public class Main {
                         transferirDinero(scanner, cajero);
                         break;
                     case 8:
+                        mostrarDatosCliente(scanner, cajero);
+                        break;
+                    case 9:
                         salir = true;
                         System.out.println("¡Gracias por usar nuestro sistema!");
                         break;
@@ -203,6 +220,34 @@ public class Main {
         }
         scanner.close();
     }
+
+    private static void mostrarDatosCliente(Scanner scanner, Cajero cajero) {
+        System.out.println("\n=== MOSTRAR DATOS DEL CLIENTE ===");
+        System.out.print("Ingrese ID del cliente: ");
+    String id = scanner.nextLine();
+    
+    Cliente cliente = cajero.buscarCliente(id);
+    if (cliente == null) {
+        System.out.println("Cliente no encontrado");
+        return;
+    }
+
+    System.out.println("Nombre: " + cliente.getNombre());
+    System.out.println("ID: " + cliente.getId());
+    System.out.println("Cuentas:");
+
+    for (Cuenta cuenta : cliente.getCuentas()) {
+        String tipo = "Cuenta";
+        if (cuenta instanceof CuentaCorriente) {
+            tipo = "Cuenta Corriente";
+        } else if (cuenta instanceof CuentaAhorros) {
+            tipo = "Cuenta de Ahorros";
+            }
+
+        System.out.printf("- %s | Nº: %s | Saldo: $%.2f\n", tipo, cuenta.getNumeroCuenta(), cuenta.getSaldo());
+        }
+    }
+
 
     private static void crearCliente(Scanner scanner, Cajero cajero) {
         System.out.println("\n=== CREAR NUEVO CLIENTE ===");
@@ -376,6 +421,7 @@ public class Main {
         } else {
             System.out.println("No se pudo realizar el retiro. Saldo insuficiente");
         }
+        
     }
 
     private static void consultarSaldo(Scanner scanner, Cajero cajero) {
